@@ -1,29 +1,19 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { BoardsModule } from './boards/boards.module';
-import { Board } from './boards/board.entity';
+import { TasksModule } from './tasks/tasks.module';
+import { UsersModule } from './users/users.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST', 'localhost'),
-        port: configService.get('DB_PORT', 7777),
-        username: configService.get('DB_USERNAME', 'postgres'),
-        password: configService.get('DB_PASSWORD', 'admin'),
-        database: configService.get('DB_NAME', 'course_db'),
-        entities: [Board],
-        synchronize: true,
-      }),
-      inject: [ConfigService],
-    }),
+    PrismaModule,
     BoardsModule,
+    TasksModule,
+    UsersModule,
   ],
 })
 export class AppModule {}
