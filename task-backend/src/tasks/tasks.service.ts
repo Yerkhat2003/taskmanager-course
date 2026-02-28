@@ -8,20 +8,35 @@ import { Task } from '../generated/prisma/client';
 export class TasksService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(): Promise<Task[]> {
-    return this.prisma.task.findMany({ include: { board: true, user: true } });
+  async findAll(status?: string): Promise<Task[]> {
+    const where = status
+      ? { status: status as 'todo' | 'in_progress' | 'done' }
+      : {};
+    return this.prisma.task.findMany({
+      where,
+      include: { board: true, user: true },
+    });
   }
 
   async findOne(id: number): Promise<Task | null> {
     return this.prisma.task.findUnique({
       where: { id },
-      include: { board: true, user: true },
+      include: { user: true },
     });
   }
 
-  async findByBoardId(boardId: number): Promise<Task[]> {
+  async findByBoardId(
+    boardId: number,
+    status?: string,
+  ): Promise<Task[]> {
+    const where: { boardId: number; status?: 'todo' | 'in_progress' | 'done' } = {
+      boardId,
+    };
+    if (status) {
+      where.status = status as 'todo' | 'in_progress' | 'done';
+    }
     return this.prisma.task.findMany({
-      where: { boardId },
+      where,
       include: { user: true },
     });
   }

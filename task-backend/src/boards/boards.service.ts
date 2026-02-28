@@ -9,7 +9,7 @@ export class BoardsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(): Promise<Board[]> {
-    return this.prisma.board.findMany({ include: { tasks: true } });
+    return this.prisma.board.findMany();
   }
 
   async findOne(id: number): Promise<Board | null> {
