@@ -9,20 +9,33 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PrismaService = void 0;
+exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
-const client_1 = require("@prisma/client");
-const adapter_better_sqlite3_1 = require("@prisma/adapter-better-sqlite3");
-let PrismaService = class PrismaService extends client_1.PrismaClient {
-    constructor() {
-        const url = process.env.DATABASE_URL ?? 'file:./dev.db';
-        const adapter = new adapter_better_sqlite3_1.PrismaBetterSqlite3({ url });
-        super({ adapter });
+const prisma_service_1 = require("../prisma/prisma.service");
+let UsersService = class UsersService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    findByEmail(email) {
+        return this.prisma.user.findUnique({
+            where: { email },
+        });
+    }
+    findById(id) {
+        return this.prisma.user.findUnique({
+            where: { id },
+        });
+    }
+    createUser(data) {
+        return this.prisma.user.create({
+            data,
+        });
     }
 };
-exports.PrismaService = PrismaService;
-exports.PrismaService = PrismaService = __decorate([
+exports.UsersService = UsersService;
+exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [])
-], PrismaService);
-//# sourceMappingURL=prisma.service.js.map
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+], UsersService);
+//# sourceMappingURL=users.service.js.map

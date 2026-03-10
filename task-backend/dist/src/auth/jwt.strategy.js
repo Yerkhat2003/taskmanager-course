@@ -9,20 +9,25 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PrismaService = void 0;
+exports.JwtStrategy = void 0;
 const common_1 = require("@nestjs/common");
-const client_1 = require("@prisma/client");
-const adapter_better_sqlite3_1 = require("@prisma/adapter-better-sqlite3");
-let PrismaService = class PrismaService extends client_1.PrismaClient {
+const passport_1 = require("@nestjs/passport");
+const passport_jwt_1 = require("passport-jwt");
+let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     constructor() {
-        const url = process.env.DATABASE_URL ?? 'file:./dev.db';
-        const adapter = new adapter_better_sqlite3_1.PrismaBetterSqlite3({ url });
-        super({ adapter });
+        super({
+            jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
+            ignoreExpiration: false,
+            secretOrKey: process.env.JWT_ACCESS_SECRET,
+        });
+    }
+    async validate(payload) {
+        return { userId: payload.sub, email: payload.email };
     }
 };
-exports.PrismaService = PrismaService;
-exports.PrismaService = PrismaService = __decorate([
+exports.JwtStrategy = JwtStrategy;
+exports.JwtStrategy = JwtStrategy = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [])
-], PrismaService);
-//# sourceMappingURL=prisma.service.js.map
+], JwtStrategy);
+//# sourceMappingURL=jwt.strategy.js.map

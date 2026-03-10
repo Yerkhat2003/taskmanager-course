@@ -1,5 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
+import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 interface Tokens {
@@ -7,9 +7,9 @@ interface Tokens {
     refreshToken: string;
 }
 export declare class AuthService {
-    private readonly prisma;
+    private readonly usersService;
     private readonly jwtService;
-    constructor(prisma: PrismaService, jwtService: JwtService);
+    constructor(usersService: UsersService, jwtService: JwtService);
     register(dto: RegisterDto): Promise<Tokens>;
     login(dto: LoginDto): Promise<Tokens>;
     refresh(refreshToken: string | undefined): Promise<Tokens>;

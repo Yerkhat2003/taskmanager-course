@@ -46,35 +46,29 @@ exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const argon2 = __importStar(require("argon2"));
-const prisma_service_1 = require("../prisma/prisma.service");
+const users_service_1 = require("../users/users.service");
 let AuthService = class AuthService {
-    prisma;
+    usersService;
     jwtService;
-    constructor(prisma, jwtService) {
-        this.prisma = prisma;
+    constructor(usersService, jwtService) {
+        this.usersService = usersService;
         this.jwtService = jwtService;
     }
     async register(dto) {
-        const existing = await this.prisma.user.findUnique({
-            where: { email: dto.email },
-        });
+        const existing = await this.usersService.findByEmail(dto.email);
         if (existing) {
             throw new common_1.BadRequestException('User with this email already exists');
         }
         const passwordHash = await argon2.hash(dto.password);
-        const user = await this.prisma.user.create({
-            data: {
-                email: dto.email,
-                name: dto.name,
-                passwordHash,
-            },
+        const user = await this.usersService.createUser({
+            email: dto.email,
+            name: dto.name,
+            passwordHash,
         });
         return this.issueTokens(user.id, user.email);
     }
     async login(dto) {
-        const user = await this.prisma.user.findUnique({
-            where: { email: dto.email },
-        });
+        const user = await this.usersService.findByEmail(dto.email);
         if (!user) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
@@ -97,9 +91,7 @@ let AuthService = class AuthService {
         catch {
             throw new common_1.UnauthorizedException('Invalid refresh token');
         }
-        const user = await this.prisma.user.findUnique({
-            where: { id: payload.sub },
-        });
+        const user = await this.usersService.findById(payload.sub);
         if (!user) {
             throw new common_1.UnauthorizedException('User not found');
         }
@@ -123,7 +115,7 @@ let AuthService = class AuthService {
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+    __metadata("design:paramtypes", [users_service_1.UsersService,
         jwt_1.JwtService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
