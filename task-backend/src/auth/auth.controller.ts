@@ -13,13 +13,20 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+<<<<<<< HEAD
 import { JwtAuthGuard } from './jwt-auth.guard';
+=======
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import type { AuthTokens } from './auth.service';
+import { Public } from './decorators/public.decorator';
+>>>>>>> 971228d7 (37)
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   async register(
     @Res({ passthrough: true }) res: Response,
@@ -31,6 +38,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async login(
     @Res({ passthrough: true }) res: Response,
@@ -42,6 +50,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async refresh(@Res({ passthrough: true }) res: Response) {
     const tokens = await this.authService.refresh(

@@ -9,6 +9,7 @@ generator client {
 }
 
 datasource db {
+<<<<<<< HEAD
   provider = "sqlite"
 }
 
@@ -18,4 +19,46 @@ model User {
   name         String
   passwordHash String
   createdAt    DateTime @default(now())
+=======
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  done
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  name     String?
+  role     Role   @default(USER)
+  tasks    Task[]
+}
+
+model Board {
+  id        Int      @id @default(autoincrement())
+  title     String
+  createdAt DateTime @default(now())
+  tasks     Task[]
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(todo)
+  boardId     Int
+  board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+>>>>>>> 971228d7 (37)
 }
