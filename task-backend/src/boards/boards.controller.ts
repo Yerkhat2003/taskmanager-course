@@ -1,54 +1,87 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  HttpCode,
-  HttpStatus,
-  UseGuards,
+  Controller, Get, Post, Patch, Delete,
+  Body, Param, ParseIntPipe,
+  HttpCode, HttpStatus, UseGuards, Res, Req,
 } from '@nestjs/common';
+import type { Response, Request } from 'express';
 import { BoardsService } from './boards.service';
-import type { Board } from './board.interface';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('boards')
-@UseGuards(JwtAuthGuard)
 export class BoardsController {
   constructor(private readonly boardsService: BoardsService) {}
 
+  @Get('shared/:token')
+  getBoardByToken(@Param('token') token: string) {
+    return this.boardsService.findByShareToken(token);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get()
-  getBoards(): Board[] {
-    return this.boardsService.findAll();
+  getBoards(@Req() req: Request) {
+    const user = (req as any).user;
+    return this.boardsService.findAll(user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  getBoard(@Param('id') id: string): Board | undefined {
-    return this.boardsService.findOne(+id);
+  getBoard(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const user = (req as any).user;
+    return this.boardsService.findOne(id, user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  createBoard(
-    @Body() createBoardDto: Omit<Board, 'id' | 'createdAt'>,
-  ): Board {
-    return this.boardsService.create(createBoardDto);
+  createBoard(@Body('title') title: string, @Req() req: Request) {
+    const user = (req as any).user;
+    return this.boardsService.create(title, user.userId);
   }
 
-  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  @Post('from-template')
+  @HttpCode(HttpStatus.CREATED)
+  createFromTemplate(
+    @Body('template') template: string,
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
+    return this.boardsService.createFromTemplate(template, user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
   updateBoard(
-    @Param('id') id: string,
-    @Body() updateBoardDto: Partial<Omit<Board, 'id' | 'createdAt'>>,
-  ): Board | undefined {
-    return this.boardsService.update(+id, updateBoardDto);
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { title?: string; completed?: boolean },
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
+    return this.boardsService.update(id, body, user?.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  deleteBoard(@Param('id') id: string): void {
-    this.boardsService.remove(+id);
+  @HttpCode(HttpStatus.OK)
+  deleteBoard(@Param('id', ParseIntPipe) id: number) {
+    return this.boardsService.remove(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/export')
+  async exportExcel(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.boardsService.exportExcel(id);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="board-${id}.xlsx"`);
+    res.send(buffer);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/share')
+  generateShare(@Param('id', ParseIntPipe) id: number) {
+    return this.boardsService.generateShareToken(id);
   }
 }
-

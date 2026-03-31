@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Res,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res, UseGuards, Req } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -26,7 +16,7 @@ export class AuthController {
     @Body() dto: RegisterDto,
   ) {
     const tokens = await this.authService.register(dto);
-    this.setRefreshCookie(res, tokens.refreshToken);
+    this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return { accessToken: tokens.accessToken };
   }
 
@@ -37,7 +27,7 @@ export class AuthController {
     @Body() dto: LoginDto,
   ) {
     const tokens = await this.authService.login(dto);
-    this.setRefreshCookie(res, tokens.refreshToken);
+    this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return { accessToken: tokens.accessToken };
   }
 
@@ -47,7 +37,7 @@ export class AuthController {
     const tokens = await this.authService.refresh(
       (res.req as any).cookies?.refreshToken,
     );
-    this.setRefreshCookie(res, tokens.refreshToken);
+    this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return { accessToken: tokens.accessToken };
   }
 
@@ -55,6 +45,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+    });
+    res.clearCookie('accessToken', {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
@@ -70,16 +66,29 @@ export class AuthController {
     return req.user;
   }
 
-  private setRefreshCookie(res: Response, token: string) {
+  private setAuthCookies(
+    res: Response,
+    accessToken: string,
+    refreshToken: string,
+  ) {
     const refreshDays = Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? '7');
-    const expires = new Date();
-    expires.setDate(expires.getDate() + refreshDays);
+    const refreshExpires = new Date();
+    refreshExpires.setDate(refreshExpires.getDate() + refreshDays);
 
     const isProd = process.env.NODE_ENV === 'production';
 
-    res.cookie('refreshToken', token, {
+    res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      expires,
+      expires: refreshExpires,
+      domain: process.env.COOKIE_DOMAIN || 'localhost',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      path: '/',
+    });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      maxAge: 1000 * 60 * 30,
       domain: process.env.COOKIE_DOMAIN || 'localhost',
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',

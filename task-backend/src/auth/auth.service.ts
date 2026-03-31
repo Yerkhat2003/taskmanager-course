@@ -36,7 +36,7 @@ export class AuthService {
       passwordHash,
     });
 
-    return this.issueTokens(user.id, user.email);
+    return this.issueTokens(user.id, user.email, user.role);
   }
 
   async login(dto: LoginDto): Promise<Tokens> {
@@ -50,7 +50,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return this.issueTokens(user.id, user.email);
+    return this.issueTokens(user.id, user.email, user.role);
   }
 
   async refresh(refreshToken: string | undefined): Promise<Tokens> {
@@ -72,31 +72,28 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return this.issueTokens(user.id, user.email);
+    return this.issueTokens(user.id, user.email, user.role);
   }
 
-  private async issueTokens(userId: number, email: string): Promise<Tokens> {
-    const payload: JwtPayload = { sub: userId, email };
+  private async issueTokens(
+    userId: number,
+    email: string,
+    role: string,
+  ): Promise<Tokens> {
+    const payload: JwtPayload = { sub: userId, email, role };
 
     const accessTokenTtl = process.env.ACCESS_TOKEN_TTL || '15m';
-    const accessToken = await this.jwtService.signAsync(
-      payload as any,
-      {
-        secret: process.env.JWT_ACCESS_SECRET,
-        expiresIn: accessTokenTtl as any,
-      } as any,
-    );
+    const accessToken = await this.jwtService.signAsync(payload as any, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: accessTokenTtl as any,
+    } as any);
 
     const refreshDays = Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? '7');
-    const refreshToken = await this.jwtService.signAsync(
-      payload as any,
-      {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: `${refreshDays}d`,
-      } as any,
-    );
+    const refreshToken = await this.jwtService.signAsync(payload as any, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: `${refreshDays}d`,
+    } as any);
 
     return { accessToken, refreshToken };
   }
 }
-

@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,9 +7,159 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  name         String
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id             Int               @id @default(autoincrement())
+  email          String            @unique
+  name           String
+  passwordHash   String
+  role           String            @default("USER")
+  bio            String?
+  avatarUrl      String?
+  createdAt      DateTime          @default(now())
+  ownedTasks     Task[]            @relation("TaskOwner")
+  assignedTasks  Task[]            @relation("TaskAssignee")
+  comments       Comment[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+  attachments    FileAttachment[]
+  reactions      CommentReaction[]
+  boardMembers   BoardMember[]
+  timeLogs       TimeLog[]
+}
+
+model Board {
+  id          Int           @id @default(autoincrement())
+  title       String
+  completed   Boolean       @default(false)
+  shareToken  String?       @unique
+  createdAt   DateTime      @default(now())
+  tasks       Task[]
+  members     BoardMember[]
+}
+
+model BoardMember {
+  id        Int      @id @default(autoincrement())
+  boardId   Int
+  userId    Int
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+}
+
+model Task {
+  id          Int              @id @default(autoincrement())
+  title       String
+  description String           @default("")
+  status      String           @default("todo")
+  priority    String           @default("medium")
+  dueDate     DateTime?
+  order       Int              @default(0)
+  boardId     Int
+  userId      Int
+  assigneeId  Int?
+  createdAt   DateTime         @default(now())
+  board       Board            @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user        User             @relation("TaskOwner", fields: [userId], references: [id], onDelete: Cascade)
+  assignee    User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  comments    Comment[]
+  attachments FileAttachment[]
+  subtasks    Subtask[]
+  labels      TaskLabel[]
+  timeLogs    TimeLog[]
+}
+
+model Subtask {
+  id        Int      @id @default(autoincrement())
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  taskId    Int
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Label {
+  id      Int         @id @default(autoincrement())
+  name    String
+  color   String      @default("#6366f1")
+  boardId Int?
+  tasks   TaskLabel[]
+}
+
+model TaskLabel {
+  taskId  Int
+  labelId Int
+  task    Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label   Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+}
+
+model Comment {
+  id        Int               @id @default(autoincrement())
+  content   String
+  taskId    Int
+  userId    Int
+  createdAt DateTime          @default(now())
+  task      Task              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions CommentReaction[]
+}
+
+model CommentReaction {
+  id        Int      @id @default(autoincrement())
+  emoji     String
+  commentId Int
+  userId    Int
+  createdAt DateTime @default(now())
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+}
+
+model TimeLog {
+  id          Int       @id @default(autoincrement())
+  taskId      Int
+  userId      Int
+  startedAt   DateTime  @default(now())
+  stoppedAt   DateTime?
+  duration    Int?
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  entityType String
+  entityId   Int
+  action     String
+  userId     Int
+  details    String   @default("")
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FileAttachment {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  userId    Int
+  filename  String
+  url       String
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
